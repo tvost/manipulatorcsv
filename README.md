@@ -47,6 +47,10 @@ Open your browser and visit http://localhost:3000.
     This application was built using React.
     The functionality may have limitations or errors related to column name editing and CSS styles due to its early development stage.
 
+### Author
+tvost- OTAVIO RODRIGUES SANTANA
+
+
 ### License
 
 This project is licensed under the MIT License.   
