@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import Papa from 'papaparse';
+import * as XLSX from 'xlsx';
 import './App.css';
+
 
 function App() {
   const [file, setFile] = useState(null);
@@ -13,6 +15,8 @@ function App() {
   const [filters, setFilters] = useState({});
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'ascending' });
   const [isEditingColumnName, setIsEditingColumnName] = useState(false);
+
+  
 
   const handleFileChange = (event) => {
     setFile(event.target.files[0]);
@@ -27,28 +31,41 @@ function App() {
     const reader = new FileReader();
 
     reader.onload = async (event) => {
-      const text = event.target.result;
+      const data = event.target.result;
 
-      // Parse do CSV com Papaparse
-      Papa.parse(text, {
-        header: true,
-        complete: (results) => {
-          setCSVData(results.data);
-          setEditedData(results.data);
-          setHistory([results.data]);
-          setCurrentHistoryIndex(0);
-        },
-        error: (error) => {
-          console.error('Erro ao analisar o arquivo CSV:', error);
-        },
-      });
+      if (file.name.endsWith('.csv')) {
+        Papa.parse(data, {
+          header: true,
+          complete: (results) => {
+            setCSVData(results.data);
+            setEditedData(results.data);
+            setHistory([results.data]);
+            setCurrentHistoryIndex(0);
+          },
+          error: (error) => {
+            console.error('Erro ao analisar o arquivo CSV:', error);
+          },
+        });
+      } else if (file.name.endsWith('.xls') || file.name.endsWith('.xlsx')) {
+        const workbook = XLSX.read(data, { type: 'binary' });
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+        setCSVData(jsonData);
+        setEditedData(jsonData);
+        setHistory([jsonData]);
+        setCurrentHistoryIndex(0);
+      } else {
+        console.error('Formato de arquivo não suportado.');
+      }
     };
 
     reader.onerror = (error) => {
       console.error('Erro ao ler o arquivo:', error);
     };
 
-    reader.readAsText(file);
+    reader.readAsBinaryString(file);
   };
 
   const handleEdit = (rowIndex, columnName, newValue) => {
@@ -200,13 +217,13 @@ function App() {
     return () => {
       document.removeEventListener('keydown', handleUndoRedo);
     };
-  });
+  }, []);
 
   return (
     <div className="App">
       <header className="App-header">
         <h1>Dashboard</h1>
-        <input type="file" accept=".csv" onChange={handleFileChange} />
+        <input type="file" accept=".csv, application/vnd.ms-excel, text/plain" onChange={handleFileChange} />
         <button onClick={handleUpload}>Enviar CSV</button>
         <button onClick={handleExport}>Exportar CSV</button>
 
@@ -292,5 +309,9 @@ function App() {
     </div>
   );
 }
+
+
+
+
 
 export default App;
